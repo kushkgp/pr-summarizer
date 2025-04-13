@@ -4,9 +4,14 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn
+from rich.markdown import Markdown
+from rich.syntax import Syntax
+from rich.text import Text
+from datetime import datetime
 from dotenv import load_dotenv
 import os
 import time
+from typing import List, Dict, Any
 
 from pr_summarizer.config.config import AppConfig
 from pr_summarizer.core.github_client import GitHubClient
@@ -27,24 +32,101 @@ def get_repo_input() -> str:
     """Get repository name from user input."""
     return Prompt.ask("Enter GitHub repository (owner/repo)")
 
+def format_date(date_str: str) -> str:
+    """Format date string to a more readable format."""
+    try:
+        date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+        return date.strftime("%B %d, %Y at %I:%M %p")
+    except:
+        return date_str
+
 def display_pr_summary(pr_data: dict, summary: str):
     """Display PR information and summary in a formatted way."""
     # Create a table for PR information
-    table = Table(title=f"PR #{pr_data.get('number', 'N/A')} Information", show_header=True, header_style="bold magenta")
-    table.add_column("Field", style="cyan")
+    table = Table(
+        title=f"PR #{pr_data.get('number', 'N/A')} Information",
+        show_header=True,
+        header_style="bold magenta",
+        border_style="blue",
+        title_style="bold cyan"
+    )
+    table.add_column("Field", style="cyan", width=20)
     table.add_column("Value", style="green")
     
+    # Add PR information
     table.add_row("Title", pr_data.get('title', 'N/A'))
-    table.add_row("Repository", pr_data.get('repository_url', 'N/A'))
-    table.add_row("Created At", pr_data.get('created_at', 'N/A'))
-    table.add_row("Status", pr_data.get('state', 'N/A'))
+    table.add_row("Author", pr_data.get('user', {}).get('login', 'N/A'))
+    table.add_row("Repository", pr_data.get('repository_url', 'N/A').split('/')[-1])
+    table.add_row("Created", format_date(pr_data.get('created_at', 'N/A')))
+    table.add_row("Updated", format_date(pr_data.get('updated_at', 'N/A')))
+    table.add_row("Status", pr_data.get('state', 'N/A').upper())
+    table.add_row("Merged", "Yes" if pr_data.get('merged_at') else "No")
     
+    # Add PR stats
+    stats = f"Commits: {pr_data.get('commits', 0)} | " \
+            f"Additions: {pr_data.get('additions', 0)} | " \
+            f"Deletions: {pr_data.get('deletions', 0)} | " \
+            f"Changed Files: {pr_data.get('changed_files', 0)}"
+    table.add_row("Stats", stats)
+    
+    console.print("\n")
     console.print(table)
     console.print("\n")
     
-    # Display the summary in a panel
-    console.print(Panel(summary, title="PR Summary", border_style="blue"))
-    console.print("\n" + "="*80 + "\n")
+    # Display PR description if available
+    if pr_data.get('body'):
+        console.print(Panel(
+            Markdown(pr_data['body']),
+            title="PR Description",
+            border_style="yellow"
+        ))
+        console.print("\n")
+    
+    # Display the summary in a panel with better formatting
+    console.print(Panel(
+        Markdown(summary),
+        title="PR Summary",
+        border_style="blue",
+        title_style="bold cyan"
+    ))
+    
+    # Add a separator
+    console.print("\n" + "="*100 + "\n")
+
+def display_all_summaries(summaries: List[Dict[str, Any]]):
+    """Display all PR summaries in a single view."""
+    console.print("\n" + "="*100)
+    console.print(Panel(
+        "All PR Summaries",
+        style="bold cyan",
+        border_style="blue"
+    ))
+    console.print("="*100 + "\n")
+    
+    for summary_data in summaries:
+        pr_data = summary_data['pr_data']
+        summary = summary_data['summary']
+        
+        # Create a compact table for each PR
+        table = Table(
+            show_header=False,
+            border_style="blue",
+            box=None
+        )
+        table.add_column("Field", style="cyan", width=15)
+        table.add_column("Value", style="green")
+        
+        table.add_row("PR #", str(pr_data.get('number', 'N/A')))
+        table.add_row("Title", pr_data.get('title', 'N/A'))
+        table.add_row("Author", pr_data.get('user', {}).get('login', 'N/A'))
+        table.add_row("Status", pr_data.get('state', 'N/A').upper())
+        
+        console.print(table)
+        console.print(Panel(
+            Markdown(summary),
+            border_style="blue"
+        ))
+        console.print("\n" + "-"*100 + "\n")
 
 def main():
     logger.info("Starting PR Summarizer")
@@ -84,6 +166,7 @@ def main():
         
         # Process each PR
         logger.info(f"Processing {len(prs)} PRs")
+        all_summaries = []
         
         with Progress(
             SpinnerColumn(),
@@ -105,10 +188,16 @@ def main():
                 duration = time.time() - start_time
                 logger.info(f"Summary generated in {duration:.2f} seconds")
                 
-                # Display results
-                display_pr_summary(pr_data, summary)
+                # Store summary for later display
+                all_summaries.append({
+                    'pr_data': pr_data,
+                    'summary': summary
+                })
+                
                 progress.update(task, advance=1)
         
+        # Display all summaries at once
+        display_all_summaries(all_summaries)
         logger.info("All PRs processed successfully")
         
     except Exception as e:
