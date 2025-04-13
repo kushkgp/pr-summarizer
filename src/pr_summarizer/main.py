@@ -1,29 +1,22 @@
-import argparse
-from typing import List, Dict, Any
+import logging
 from rich.console import Console
-from rich.markdown import Markdown
-from datetime import datetime
-import json
 from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.table import Table
-from rich import print as rprint
-from rich.logging import RichHandler
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn
 from dotenv import load_dotenv
 import os
-import logging
 import time
 
-from config import AppConfig, LLMConfig
-from github_client import GitHubClient
-from llm_summarizer import summarize_pr
+from pr_summarizer.config.config import AppConfig
+from pr_summarizer.core.github_client import GitHubClient
+from pr_summarizer.models.summarizer import PRSummarizer
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(message)s",
-    handlers=[RichHandler(rich_tracebacks=True)]
+    handlers=[logging.StreamHandler()]
 )
 logger = logging.getLogger("pr_summarizer")
 
@@ -61,7 +54,7 @@ def main():
     logger.info("Environment variables loaded")
     
     # Get configuration
-    config = AppConfig()
+    config = AppConfig.from_env()
     logger.info("Configuration loaded")
     
     # Get repository input
@@ -86,6 +79,9 @@ def main():
             logger.error(f"Model not found at {MODEL_PATH}. Please run download_model.py first.")
             return
         
+        # Initialize summarizer
+        summarizer = PRSummarizer(MODEL_PATH, config.llm_config.dict())
+        
         # Process each PR
         logger.info(f"Processing {len(prs)} PRs")
         
@@ -103,11 +99,11 @@ def main():
                 logger.info(f"Processing PR #{pr_data['number']}: {pr_data['title']}")
                 
                 # Generate summary
-                logger.info("Initializing LLM for summary generation")
+                logger.info("Generating summary")
                 start_time = time.time()
-                summary = summarize_pr(pr_data, config.llm_config, MODEL_PATH)
+                summary = summarizer.summarize(pr_data)
                 duration = time.time() - start_time
-                logger.info(f"LLM summary generated in {duration:.2f} seconds")
+                logger.info(f"Summary generated in {duration:.2f} seconds")
                 
                 # Display results
                 display_pr_summary(pr_data, summary)
