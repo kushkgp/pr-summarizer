@@ -28,7 +28,7 @@ A Python application that fetches and summarizes GitHub pull requests using Mist
 
 5. Download the Mistral model:
    ```bash
-   python download_model.py
+   python3 download_model.py
    ```
 
 ## Steps to Run
@@ -37,7 +37,7 @@ A Python application that fetches and summarizes GitHub pull requests using Mist
    - Ensure you have Python 3.8 or higher installed
    - Create and activate a virtual environment (recommended):
      ```bash
-     python -m venv venv
+     python3 -m venv venv
      source venv/bin/activate  # On Windows use: venv\Scripts\activate
      ```
 
@@ -53,7 +53,7 @@ A Python application that fetches and summarizes GitHub pull requests using Mist
 3. **Running the Application**
    - Basic usage:
      ```bash
-     python main.py
+     python3 main.py
      ```
    - The application will prompt you to enter a repository name in the format `owner/repo`
    - Example repository input:
@@ -65,7 +65,7 @@ A Python application that fetches and summarizes GitHub pull requests using Mist
 
 1. Run the application:
    ```bash
-   python main.py
+   python3 main.py
    ```
 
 2. When prompted, enter the repository name in the format `owner/repo`
