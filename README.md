@@ -1,14 +1,14 @@
 # GitHub PR Summarizer
 
-A Python application that fetches and summarizes GitHub pull requests using OpenAI's LLM.
+A Python application that fetches and summarizes GitHub pull requests using Mistral's LLM.
 
 ## Features
 
-- Fetch PRs for a specific user within a given time period
-- Detailed PR summaries using OpenAI's LLM
-- Console or file output options
-- Progress tracking for API calls
+- Fetch recent PRs from any GitHub repository
+- Detailed PR summaries using Mistral 7B Instruct model
+- Rich console output with progress tracking
 - Error handling and logging
+- Local LLM processing for privacy and cost efficiency
 
 ## Setup
 
@@ -17,11 +17,19 @@ A Python application that fetches and summarizes GitHub pull requests using Open
    ```bash
    pip install -r requirements.txt
    ```
-3. Copy `.env.example` to `.env` and fill in your API keys:
+3. Copy `.env.example` to `.env` and fill in your GitHub token:
    ```bash
    cp .env.example .env
    ```
-4. Edit `.env` with your GitHub and OpenAI API keys
+4. Edit `.env` with your GitHub API key:
+   ```
+   GITHUB_TOKEN=your_github_token_here
+   ```
+
+5. Download the Mistral model:
+   ```bash
+   python download_model.py
+   ```
 
 ## Steps to Run
 
@@ -37,66 +45,53 @@ A Python application that fetches and summarizes GitHub pull requests using Open
    - Get your GitHub Personal Access Token:
      1. Go to GitHub Settings > Developer Settings > Personal Access Tokens
      2. Generate a new token with `repo` scope
-   - Get your OpenAI API Key:
-     1. Sign up at OpenAI
-     2. Create an API key in your account settings
-   - Add these keys to your `.env` file:
+   - Add the token to your `.env` file:
      ```
      GITHUB_TOKEN=your_github_token_here
-     OPENAI_API_KEY=your_openai_key_here
      ```
 
 3. **Running the Application**
-   - Basic usage (console output):
+   - Basic usage:
      ```bash
-     python main.py <github_username> <days_to_look_back>
+     python main.py
      ```
-   - Example to get PRs from the last 7 days:
-     ```bash
-     python main.py octocat 7
+   - The application will prompt you to enter a repository name in the format `owner/repo`
+   - Example repository input:
      ```
-   - To save output to a file:
-     ```bash
-     python main.py octocat 7 --output file --output-file summaries.json
+     octocat/Hello-World
      ```
-
-4. **Verification**
-   - Check the console output or the generated file for PR summaries
-   - Ensure you see progress indicators for API calls
-   - Verify that PR summaries are being generated correctly
 
 ## Usage
 
-Basic usage:
-```bash
-python main.py <github_username> <days_to_look_back>
-```
+1. Run the application:
+   ```bash
+   python main.py
+   ```
 
-Example:
-```bash
-python main.py octocat 7
-```
+2. When prompted, enter the repository name in the format `owner/repo`
 
-### Options
-
-- `--output`: Output format (console or file)
-- `--output-file`: Output file path (required if output is file)
-
-Example with file output:
-```bash
-python main.py octocat 7 --output file --output-file summaries.json
-```
+3. The application will:
+   - Fetch the 10 most recent PRs from the repository
+   - Generate summaries using the Mistral model
+   - Display results in a formatted table with progress tracking
 
 ## Configuration
 
 The application can be configured through environment variables:
 
 - `GITHUB_TOKEN`: Your GitHub personal access token
-- `OPENAI_API_KEY`: Your OpenAI API key
 
 LLM settings can be modified in the `config.py` file.
 
 ## Requirements
 
 - Python 3.8+
-- See `requirements.txt` for package dependencies 
+- See `requirements.txt` for package dependencies
+- ~4.1GB of disk space for the Mistral model
+- Sufficient RAM for running the LLM locally
+
+## Notes
+
+- The application uses the Mistral 7B Instruct model in 4-bit quantization for efficient local processing
+- PR summaries are generated using the local model, ensuring privacy and reducing API costs
+- The application fetches the 10 most recent PRs by default 
