@@ -1,0 +1,14 @@
+{
+    "github": {
+        "token": "",
+        "repo": "kushagra-kag/pr-summarizer"
+    },
+    "model": {
+        "path": "models/mistral-7b-instruct-v0.2.Q4_K_M.gguf",
+        "context_window": 4096,
+        "temperature": 0.7,
+        "top_p": 0.95,
+        "repeat_penalty": 1.1
+    },
+    "batch_size": 5
+} 

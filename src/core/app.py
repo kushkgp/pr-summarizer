@@ -23,6 +23,7 @@ class PRSummarizerApp:
         self.config = config
         self.github_client = GitHubClient(config.github_token)
         self.summarizer = LLMSummarizer(config.llm_config)
+        logger.debug("PRSummarizerApp initialized")
 
     def get_repo_input(self) -> str:
         """Get repository name from user input."""
@@ -46,18 +47,18 @@ class PRSummarizerApp:
 
     def run(self) -> None:
         """Run the PR summarization process."""
-        logger.info("Starting PR Summarizer")
+        console.print("[bold cyan]GitHub PR Summarizer[/bold cyan]")
         
         try:
             repo = self.get_repo_input()
-            logger.info(f"Selected repository: {repo}")
             
-            prs = self.github_client.get_recent_prs(repo)
-            if not prs:
-                logger.error("No PRs found or failed to fetch PRs")
-                return
+            with console.status("[bold green]Fetching PRs...[/bold green]") as status:
+                prs = self.github_client.get_recent_prs(repo)
+                if not prs:
+                    console.print("[bold red]No PRs found or failed to fetch PRs[/bold red]")
+                    return
             
-            logger.info(f"Processing {len(prs)} PRs")
+            console.print(f"[bold green]Found {len(prs)} PRs to summarize[/bold green]")
             
             with Progress(
                 SpinnerColumn(),
@@ -69,18 +70,19 @@ class PRSummarizerApp:
             ) as progress:
                 task = progress.add_task("[cyan]Summarizing PRs...", total=len(prs))
                 
-                for pr_data in prs:
-                    logger.info(f"Processing PR #{pr_data['number']}: {pr_data['title']}")
-                    
-                    start_time = time.time()
-                    summary = self.summarizer.summarize(pr_data)
-                    duration = time.time() - start_time
-                    logger.info(f"LLM summary generated in {duration:.2f} seconds")
-                    
+                # Make a single call to the LLM for all PRs
+                start_time = time.time()
+                summaries = self.summarizer.summarize_all(prs)
+                duration = time.time() - start_time
+                logger.debug(f"All summaries generated in {duration:.2f} seconds")
+                
+                # Display results
+                for pr_data, summary in zip(prs, summaries):
                     self.display_pr_summary(pr_data, summary)
                     progress.update(task, advance=1)
             
-            logger.info("All PRs processed successfully")
+            console.print("[bold green]All PRs processed successfully[/bold green]")
             
         except Exception as e:
+            console.print(f"[bold red]Error: {str(e)}[/bold red]")
             logger.error(f"Error: {str(e)}", exc_info=True) 

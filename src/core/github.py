@@ -19,6 +19,7 @@ class GitHubClient:
             "Accept": "application/vnd.github.v3+json"
         }
         self.base_url = "https://api.github.com"
+        logger.debug("GitHub client initialized")
 
     def _make_request(self, endpoint: str, params: Optional[Dict] = None) -> Any:
         """Make a request to GitHub API."""
@@ -45,7 +46,9 @@ class GitHubClient:
         }
         
         try:
+            logger.info(f"Fetching PRs from {repo}")
             prs = self._make_request(endpoint, params)
+            logger.info(f"Found {len(prs)} PRs")
             return [
                 {
                     "number": pr["number"],

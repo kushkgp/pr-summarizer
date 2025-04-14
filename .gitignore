@@ -39,4 +39,11 @@ env/
 Thumbs.db
 
 # Models
+models/
+
+# Logs
+logs/
+*.log
+
+# Models
 models/ 
